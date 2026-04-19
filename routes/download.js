@@ -49,8 +49,13 @@ router.get('/ytsearch', async (req, res) => {
 router.get('/instagram', async (req, res) => {
   const { url } = req.query
   if (!url) return err(res, 'Parameter url wajib diisi')
-  // TODO: tambahkan scraper instagram
-  err(res, 'Scraper Instagram belum diimplementasikan', 501)
+  try {
+    const instagram = require('../scrapers/instagram')
+    const result    = await instagram(url)
+    ok(res, result)
+  } catch (e) {
+    err(res, e.message, 500)
+  }
 })
 
 // GET /api/download/twitter?url=...
@@ -65,8 +70,13 @@ router.get('/twitter', async (req, res) => {
 router.get('/tiktok', async (req, res) => {
   const { url } = req.query
   if (!url) return err(res, 'Parameter url wajib diisi')
-  // TODO: tambahkan scraper tiktok
-  err(res, 'Scraper TikTok belum diimplementasikan', 501)
+  try {
+    const tiktok = require('../scrapers/tiktok')
+    const result = await tiktok(url)
+    ok(res, result)
+  } catch (e) {
+    err(res, e.message, 500)
+  }
 })
 
 // GET /api/download/facebook?url=...
@@ -87,14 +97,26 @@ router.get('/threads', async (req, res) => {
 router.get('/spotify', async (req, res) => {
   const { url } = req.query
   if (!url) return err(res, 'Parameter url wajib diisi')
-  err(res, 'Scraper Spotify belum diimplementasikan', 501)
+  try {
+    const spotify = require('../scrapers/spotify')
+    const result  = await spotify(url)
+    ok(res, result)
+  } catch (e) {
+    err(res, e.message, 500)
+  }
 })
 
 // GET /api/download/pinterest?url=...
 router.get('/pinterest', async (req, res) => {
   const { url } = req.query
   if (!url) return err(res, 'Parameter url wajib diisi')
-  err(res, 'Scraper Pinterest belum diimplementasikan', 501)
+  try {
+    const pinterest = require('../scrapers/pinterest')
+    const result    = await pinterest(url)
+    ok(res, result)
+  } catch (e) {
+    err(res, e.message, 500)
+  }
 })
 
 module.exports = router
