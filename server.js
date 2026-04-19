@@ -1,33 +1,9 @@
 const express = require('express')
 const cors    = require('cors')
-const stats   = require('./lib/stats')
-
-const app = express()
+const app     = express()
 
 app.use(cors())
 app.use(express.json())
-
-// ── Stats middleware — catat setiap request API ───────────────────
-app.use('/api', (req, res, next) => {
-  const start = Date.now()
-  const ip    = req.headers['x-forwarded-for']?.split(',')[0]?.trim()
-             || req.socket?.remoteAddress
-             || 'Unknown'
-
-  res.on('finish', () => {
-    // Jangan catat endpoint stats itu sendiri
-    if (req.path === '/stats' || req.path === '/visitor') return
-    stats.record({
-      method: req.method,
-      path:   req.path,
-      status: res.statusCode,
-      ms:     Date.now() - start,
-      ip,
-    })
-  })
-
-  next()
-})
 
 // ── Routes ────────────────────────────────────────────────────────
 app.use('/api/download', require('./routes/download'))
@@ -46,60 +22,6 @@ app.get('/api/ytsearch', async (req, res) => {
     ok(res, result)
   } catch (e) {
     err(res, e.message, 500)
-  }
-})
-
-// ── Stats endpoints (dibaca frontend) ────────────────────────────
-
-// GET /api/stats — return stats global dari Firestore
-app.get('/api/stats', async (req, res) => {
-  try {
-    const { db } = require('./lib/stats')
-    // db tidak di-export, pakai admin langsung
-    const admin = require('firebase-admin')
-    const snap  = await admin.firestore().collection('stats').doc('global').get()
-    res.json({
-      status:  true,
-      creator: 'Retro API',
-      result:  snap.exists ? snap.data() : { requests: 0, success: 0, failed: 0, visitors: 0 },
-    })
-  } catch (e) {
-    res.status(500).json({ status: false, message: e.message })
-  }
-})
-
-// GET /api/logs?limit=10 — return usage logs terbaru
-app.get('/api/logs', async (req, res) => {
-  try {
-    const admin = require('firebase-admin')
-    const limit = Math.min(Number(req.query.limit) || 10, 50)
-    const snap  = await admin.firestore()
-      .collection('usage_logs')
-      .orderBy('ts', 'desc')
-      .limit(limit)
-      .get()
-
-    const logs = snap.docs.map(d => {
-      const data = d.data()
-      return {
-        ...data,
-        ts: data.ts?.toDate?.()?.toISOString() || null,
-      }
-    })
-
-    res.json({ status: true, creator: 'Retro API', result: logs })
-  } catch (e) {
-    res.status(500).json({ status: false, message: e.message })
-  }
-})
-
-// POST /api/visitor — increment visitor counter
-app.post('/api/visitor', async (req, res) => {
-  try {
-    await stats.incrementVisitor()
-    res.json({ status: true, creator: 'Retro API', result: { incremented: true } })
-  } catch (e) {
-    res.status(500).json({ status: false, message: e.message })
   }
 })
 
